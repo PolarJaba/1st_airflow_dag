@@ -5,6 +5,9 @@
 При подключении к контейнеру postgres написан запрос на создание таблицы для сбора данных:
 ![image](https://github.com/PolarJaba/1st_airflow_dag/blob/main/3-3/create_table.PNG)
 
+Через веб-интерфейс airflow созданно подключение:
+![image](https://github.com/PolarJaba/1st_airflow_dag/blob/main/3-3/conn.PNG)
+
 Создан [dag](https://github.com/PolarJaba/1st_airflow_dag/blob/main/airflow/dags/rates.py) для получения курсов биткоина к рублю каждые 10 минут и записи значений в таблицу базы данных postgres.
 
 В результате получена таблица:
