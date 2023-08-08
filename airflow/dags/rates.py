@@ -62,6 +62,20 @@ def import_codes(**kwargs):
     ti.xcom_push(key='results', value={"rate_date": rate_date, "value_": value_, "ingest_datetime": ingest_datetime})
 
 
+def create_table(**kwargs):
+    pg_conn = get_conn_credentials(dag_variables.get('connection_name'))
+    pg_hostname, pg_port, pg_username, pg_pass, pg_db = pg_conn.host, pg_conn.port, pg_conn.login, pg_conn.password, pg_conn.schema
+    conn = psycopg2.connect(host=pg_hostname, port=pg_port, user=pg_username, password=pg_pass, database=pg_db)
+
+    cursor = conn.cursor()
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS rates(ingest_datetime timestamp, rate_date date, rate_base VARCHAR(20),"
+                   f"rate_target VARCHAR(20), value_ numeric(23,5));")
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
 def insert_data(**kwargs):
     task_instance = kwargs['task_instance']
     results = task_instance.xcom_pull(key='results', task_ids='import_rates')
@@ -93,12 +107,13 @@ with DAG(dag_id="parsing-dag", schedule_interval="*/10 * * * *",
     hello_bash_task = BashOperator(task_id='bash_task',
                                    bash_command="echo 'Good morning my diggers!'")
 
+    create_table = PythonOperator(task_id='create_table',
+                                  python_callable=create_table)
+             
     import_rates_from_api = PythonOperator(task_id='import_rates',
                                            python_callable=import_codes)
 
     insert_rates_to_pg = PythonOperator(task_id='insert_data',
                                         python_callable=insert_data)
 
-hello_bash_task >> import_rates_from_api >> insert_rates_to_pg
-
-
+hello_bash_task >> create_table >> import_rates_from_api >> insert_rates_to_pg
